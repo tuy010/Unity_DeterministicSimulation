@@ -33,8 +33,8 @@ public class SimManager : Singleton<SimManager>
     #region Public
     public void StartSim(bool ishost)
     {
+        Debug.Log("StartSim");
         this.isHost = ishost;
-
         isRunning = true;
     }
     #endregion
@@ -59,7 +59,6 @@ public class SimManager : Singleton<SimManager>
             if(inputQueue.Count >= logSize)
             {
                 inputQueue.Dequeue();
-                Debug.Log($"Log over {logSize}");
             }
             inputQueue.Enqueue(input);
 
@@ -67,7 +66,7 @@ public class SimManager : Singleton<SimManager>
             Physics.Simulate(Time.fixedDeltaTime);
             tick++;
 
-
+            Singleton<NetworkManager>.Instance.SendInputData(inputQueue);
         }
 
         else
@@ -75,6 +74,8 @@ public class SimManager : Singleton<SimManager>
             while (inputQueue.Count > 0)
             {
                 InputData input = inputQueue.Dequeue();
+
+                Debug.Log($"now Tick = {tick} / data Tick = {input.tick}");
 
                 if (tick > input.tick)
                 {
@@ -101,7 +102,7 @@ public class SimManager : Singleton<SimManager>
     {
         Vector3 tmp = new Vector3(
             (input.left ? -1:0) + (input.right?1:0),
-            (input.up ? 1 : 0),
+            (input.up ? 10 : 0),
             (input.backward ? -1 : 0) + (input.forward ? 1 : 0)
             ) * speed; 
         

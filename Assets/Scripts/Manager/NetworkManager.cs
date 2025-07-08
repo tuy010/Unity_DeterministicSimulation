@@ -5,8 +5,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.LightTransport;
+using static UnityEngine.UI.Image;
 
 public class NetworkManager : Singleton<NetworkManager>
 {
@@ -65,7 +66,12 @@ public class NetworkManager : Singleton<NetworkManager>
     }
     public void Connect()
     {
-        if (isConnected) return;
+        Debug.Log("call connect");
+
+        if (isConnected) {
+            Debug.Log("already connected");
+            return;
+        }
 
         if (isHost)
             MessageReceived += data => OnReceiveClientData(data);
@@ -80,6 +86,7 @@ public class NetworkManager : Singleton<NetworkManager>
     #region UDP
     private void ConnectUDP()
     {
+        Debug.Log("Start connect.");
         try
         {
             string targetIP = isHost ? clientIP : serverIP;
@@ -150,11 +157,14 @@ public class NetworkManager : Singleton<NetworkManager>
         var buffer = new byte[] { (byte)MsgType.StartSim };
         SendData(buffer, false);
     }
-    private void SendInputData(Queue<InputData> datas)
+    public void SendInputData(Queue<InputData> datas)
     {
+        InputData[] array = datas.ToArray();
+        Queue<InputData> copy = new Queue<InputData>(array);
+        Debug.Log($"SendTestPacket - Count: {datas.Count}");
         var buffer = new List<byte>();
         buffer.Add((byte)MsgType.InputData);
-        buffer.AddRange(SerializeStructUtil.SerializeQueue(datas));
+        buffer.AddRange(SerializeStructUtil.SerializeQueue(copy));
         SendData(buffer.ToArray());
     }
     private void OnReceiveClientData(byte[] bytes)
@@ -193,11 +203,18 @@ public class NetworkManager : Singleton<NetworkManager>
                 break;
 
             case MsgType.StartSim:
+                Debug.Log("Receive StartSim Packet");
                 Singleton<SimManager>.Instance.StartSim(false);
                 break;
 
             case MsgType.InputData:
+                Debug.Log("Receive InputData Packet");
                 Queue<InputData> receivedQueue = SerializeStructUtil.DeserializeQueue<InputData>(bytes[1..]);
+                int cnt = 0;
+                foreach (InputData data in receivedQueue)
+                {
+                    Debug.Log($"{cnt++} : {data.tick} / {data.forward} / {data.backward} / {data.left} / {data.right}");
+                }
                 SimManager.Instance.inputQueue = receivedQueue;
                 break;
         }
